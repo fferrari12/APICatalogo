@@ -8,6 +8,8 @@ using APICatalogo.Filters;
 using APICatalogo.Repositories;
 using AutoMapper;
 using APICatalogo.DTOs;
+using APICatalogo.Pagination;
+using Newtonsoft.Json;
 
 namespace APICatalogo.Controllers
 {
@@ -63,6 +65,35 @@ namespace APICatalogo.Controllers
             }
             var categoriaDto = _mapper.Map<CategoriaDTO>(categoria);
             return Ok(categoriaDto);
+        }
+
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<CategoriaDTO>> Get([FromQuery] CategoriasParameters categoriasParameters)
+        {
+            var categorias = _uow.Categorias.GetCategorias(categoriasParameters);
+            return ObterCategoria(categorias);
+        }
+
+        [HttpGet("filter/nome/pagination")]
+        public ActionResult<IEnumerable<CategoriaDTO>> GetCategoriasPorNome([FromQuery] CategoriasFiltroNome categoriasFiltroNome)
+        {
+            var categorias = _uow.Categorias.GetCategoriasPorNome(categoriasFiltroNome);
+            return ObterCategoria(categorias);
+        }
+        private ActionResult<IEnumerable<CategoriaDTO>> ObterCategoria(PagedList<Categoria> categorias)
+        {
+            var metadata = new
+            {
+                categorias.TotalCount,
+                categorias.PageSize,
+                categorias.CurrentPage,
+                categorias.TotalPages,
+                categorias.HasNext,
+                categorias.HasPrevious
+            };
+            Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+            var categoriasDto = _mapper.Map<IEnumerable<CategoriaDTO>>(categorias);
+            return Ok(categoriasDto);
         }
 
         [HttpPost]
